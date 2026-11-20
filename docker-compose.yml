@@ -1,0 +1,21 @@
+# Runs both halves. Backend data lives in the `connect-data` volume. Fill in backend/.env.local first
+# (copy backend/.env.example), at least SESSION_SECRET for anything beyond a local try-out.
+services:
+  backend:
+    build: ./backend
+    env_file: ./backend/.env.local
+    environment:
+      SHOWCASE_URL: http://localhost:3001 # lets the showcase's account menu read who is signed in
+    ports: ["3000:3000"]
+    volumes: ["connect-data:/data"]
+
+  frontend:
+    build: ./frontend
+    environment:
+      CONNECT_API_URL: http://backend:3000
+      NEXT_PUBLIC_CONNECT_APP_URL: http://localhost:3000
+    ports: ["3001:3001"]
+    depends_on: [backend]
+
+volumes:
+  connect-data:

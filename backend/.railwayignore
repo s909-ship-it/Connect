@@ -1,0 +1,4 @@
+# Kept out of `railway up` uploads (it also skips everything in .gitignore).
+buildathon
+prototype
+.claude

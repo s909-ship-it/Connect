@@ -1,0 +1,441 @@
+<title>Connect Campus Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Hanken+Grotesk:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: app shell. Sticky top bar with tabs, one main column (max 1040px) that splits
+   into content + a narrow aside on wide screens. Proof is drawn as rubber stamps. */
+:root{
+  --bg:#F1F2F7; --surface:#FFFFFF; --sunk:#E8EAF2; --ink:#161930; --muted:#5A5F7B; --line:#D7DAE7;
+  --accent:#2A3BDB; --accent-ink:#FFFFFF; --accent-soft:#E3E6FB;
+  --mark:#F5B921; --mark-ink:#3A2A00;
+  --ok:#0F7A57; --ok-soft:#DDF1EA; --warn:#A85608; --warn-soft:#F8E9D4; --bad:#BE332C; --bad-soft:#F8DEDC;
+  --display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"DM Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F1120; --surface:#181B2E; --sunk:#12152A; --ink:#ECEEF9; --muted:#9BA1BF; --line:#2C3050;
+  --accent:#8E9AFF; --accent-ink:#0C0E1C; --accent-soft:#242A56;
+  --mark:#F5B921; --mark-ink:#2A1E00;
+  --ok:#4FC79C; --ok-soft:#143429; --warn:#EBA552; --warn-soft:#3A2A12; --bad:#F2776F; --bad-soft:#3D1B1A;
+  color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0F1120; --surface:#181B2E; --sunk:#12152A; --ink:#ECEEF9; --muted:#9BA1BF; --line:#2C3050;
+  --accent:#8E9AFF; --accent-ink:#0C0E1C; --accent-soft:#242A56;
+  --mark:#F5B921; --mark-ink:#2A1E00;
+  --ok:#4FC79C; --ok-soft:#143429; --warn:#EBA552; --warn-soft:#3A2A12; --bad:#F2776F; --bad-soft:#3D1B1A;
+  color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--body)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.15rem;font-weight:700}
+h3{font-size:1rem;font-weight:700}
+p{margin:0}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* top bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:4px 20px;padding-block:10px 0}
+.logo{font:700 1.3rem var(--display);letter-spacing:-.02em;background:none;border:0;padding:0;display:flex;align-items:center;gap:8px}
+.logo i{width:14px;height:14px;border-radius:50%;background:var(--mark);box-shadow:9px 0 0 -1px var(--accent);margin-right:8px}
+.who{margin-left:auto;display:flex;align-items:center;gap:10px;background:none;border:0;padding:0}
+.bal{font:500 .8rem var(--mono);background:var(--mark);color:var(--mark-ink);padding:3px 8px;border-radius:4px}
+.tabs{display:flex;gap:2px;overflow-x:auto;width:100%;scrollbar-width:none}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:9px 12px 8px;font-weight:600;color:var(--muted);white-space:nowrap}
+.tabs button[aria-current="page"]{color:var(--ink);border-color:var(--accent)}
+.sample{background:var(--accent-soft);font-size:.8rem;color:var(--ink)}
+.sample .wrap{padding-block:5px}
+
+main{padding-block:24px 64px;display:flex;flex-direction:column;gap:20px}
+.head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:end;justify-content:space-between}
+.head p{color:var(--muted);max-width:62ch}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+@media (max-width:820px){.cols{grid-template-columns:minmax(0,1fr)}}
+.stack{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+button.card{text-align:left;width:100%}
+button.card:hover{border-color:var(--accent)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.between{justify-content:space-between}
+.muted{color:var(--muted)} .small{font-size:.85rem}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.label{font:500 .7rem var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+
+.av{width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;font:700 .75rem var(--display);color:#fff;flex:none;border:2px solid var(--surface)}
+.av.lg{width:64px;height:64px;font-size:1.3rem}
+.avs{display:flex}.avs .av+.av{margin-left:-8px}
+.chip{font-size:.78rem;padding:2px 8px;border-radius:99px;background:var(--sunk);border:1px solid var(--line);white-space:nowrap}
+.pill{font:500 .7rem var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:4px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.info{background:var(--accent-soft);color:var(--accent)}
+/* the stamp: proof that teammates signed off */
+.stamp{font:500 .68rem var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:3px 7px;border:1.5px solid var(--ok);color:var(--ok);border-radius:3px;transform:rotate(-2deg);display:inline-block;white-space:nowrap}
+.stamp.no{border-style:dashed;border-color:var(--warn);color:var(--warn);transform:none}
+.stamp.bad{border-color:var(--bad);color:var(--bad)}
+
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:7px;padding:8px 14px;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.link{background:none;border:0;padding:0;color:var(--accent);font-weight:600;text-align:left}
+.link:hover{text-decoration:underline}
+input[type=search],input[type=text]{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:8px 12px;min-width:0;flex:1 1 200px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:5px 12px;font-size:.85rem;font-weight:500}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.meter{height:6px;background:var(--sunk);border:1px solid var(--line);border-radius:99px;overflow:hidden;flex:1 1 80px;min-width:60px}
+.meter b{display:block;height:100%;background:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.stat b{display:block;font:500 1.6rem/1.1 var(--mono)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th{font:500 .7rem var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left}
+th,td{padding:8px 10px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.note{border:1px dashed var(--line);border-radius:10px;padding:12px 14px;color:var(--muted);font-size:.88rem}
+.alert{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:.88rem;font-weight:500}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.rules .card p{color:var(--muted);font-size:.9rem}
+.resume{font-size:.92rem}.resume ul{margin:4px 0 0;padding-left:18px}.resume li{margin:3px 0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:500;max-width:calc(100% - 32px);z-index:20}
+.signin{max-width:440px;margin:6vh auto 0}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{opacity:.4;translate:0 8px}}}
+</style>
+
+<div id="app"></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script>
+/* ---------- sample data (all people, projects and amounts here are invented) ---------- */
+const ME = 'ishaan';
+const P = {
+  ishaan:{n:'Ishaan Deshmukh', b:'ECE', y:2027, hue:232, skills:['Embedded C','ESP32','PCB design'], vouch:14},
+  riya:{n:'Riya Patil', b:'CSE', y:2027, hue:340, skills:['React','Node','Figma'], vouch:22},
+  kabir:{n:'Kabir Shaikh', b:'CSE', y:2026, hue:160, skills:['Python','ML','FastAPI'], vouch:12},
+  tanvi:{n:'Tanvi Kulkarni', b:'CSE', y:2026, hue:20, skills:['Product','UI design','Next.js'], vouch:18},
+  sneha:{n:'Sneha Jadhav', b:'IT', y:2028, hue:280, skills:['Flutter','Firebase'], vouch:4},
+  arjun:{n:'Arjun Mane', b:'Mech', y:2027, hue:95, skills:['CAD','3D printing','Mechanisms'], vouch:6},
+  omkar:{n:'Omkar Pawar', b:'ECE', y:2028, hue:195, skills:['Verilog','FPGA','Sensors'], vouch:3},
+  dev:{n:'Dev Rathod', b:'CSE', y:2027, hue:0, skills:['AI','Web3','Leadership'], vouch:0},
+  meera:{n:'Meera Joshi', b:'CSE', y:2016, hue:310, alum:'Senior engineer, payments', skills:[], vouch:0},
+  rohan:{n:'Rohan Bhosale', b:'Mech', y:2012, hue:40, alum:'Founder, EV components', skills:[], vouch:0},
+};
+const CLAIMS = { dev:['Founder at a stealth AI startup','Built 10+ full-stack apps','Web3 expert','Led a 200-member tech community'], ishaan:[] };
+// pot: 100 = live and in use, 60 = working but repo/demo only. split = median of what teammates gave each other.
+const PR = [
+ {id:'busping', n:'BusPing', d:'Live location of the three college buses, from an ESP32 GPS unit on each one.', st:'shipped', date:'Mar 2026', pot:100,
+  proof:['Live site, 410 riders a week','Repo with 212 commits','Demo video'], ms:[1,1,1],
+  team:{ishaan:['Hardware','Built the GPS unit and firmware, fitted it on 3 buses',40], riya:['Web app','Map view and arrival alerts',35], arjun:['Enclosure','Designed and printed the weatherproof case',25]}},
+ {id:'festpass', n:'FestPass', d:'QR entry passes for the annual fest. Scanned 3,100 entries over two days.', st:'shipped', date:'Jan 2026', pot:100,
+  proof:['Used at the fest gate','Repo with 148 commits'], ms:[1,1],
+  team:{tanvi:['Lead, design','Ran the project and designed the pass flow',40], riya:['Frontend','Booking site and scanner app',35], ishaan:['Scanner rig','Offline handheld scanners for the gates',25]}},
+ {id:'solarlog', n:'SolarLog', d:'Temperature logger for the hostel solar water heater, so you know when the water is hot.', st:'shipped', date:'Oct 2025', pot:60,
+  proof:['Repo with 64 commits','Photos of the installed unit'], ms:[1,1],
+  team:{ishaan:['Firmware','Sensor board and logging firmware',55], omkar:['Sensors','Calibrated probes and wrote the dashboard',45]}},
+ {id:'messmate', n:'MessMate', d:'Daily mess menu with ratings. The mess committee reads the weekly report.', st:'shipped', date:'Feb 2026', pot:100,
+  proof:['Live app, 620 students','Repo with 301 commits'], ms:[1,1,1],
+  team:{riya:['Lead, web','Web app and admin panel',45], kabir:['Backend','API and weekly report job',30], sneha:['Mobile','Flutter app',25]}},
+ {id:'placetrack', n:'PlaceTrack', d:'Tracks placement prep: company-wise questions seniors were actually asked.', st:'shipped', date:'Aug 2025', pot:100,
+  proof:['Live site, 380 final-years','Repo with 190 commits'], ms:[1,1], ghost:['dev'],
+  team:{tanvi:['Lead','Collected question bank from 40 seniors',40], kabir:['Backend','Search and tagging',35], riya:['Frontend','Site',25]}},
+ {id:'printqueue', n:'PrintQueue', d:'Booking queue for the workshop 3D printer.', st:'shipped', date:'Nov 2025', pot:60,
+  proof:['Repo with 41 commits','In use at the workshop'], ms:[1],
+  team:{arjun:['Lead','Queue rules and printer profiles',60], omkar:['Display','Status display at the printer',40]}},
+ {id:'labslot', n:'LabSlot', d:'Book lab equipment by the hour. RFID tap to check out an oscilloscope.', st:'building', date:'Started Sep 2026', pot:100,
+  proof:['Repo with 87 commits'], ms:[1,1,0,0], ghost:['dev'],
+  open:[['Backend (Node)',"Kabir's API needs a second pair of hands"],['RFID hardware','One ECE student for the reader units']],
+  team:{tanvi:['Lead','',0], kabir:['Backend','',0]}},
+ {id:'lfr', n:'Robocon line follower', d:'Line follower for the regional Robocon round in February.', st:'building', date:'Started Oct 2026', pot:100,
+  proof:['Repo with 33 commits','Chassis photos'], ms:[1,0,0],
+  open:[['Control / PID tuning','Someone who has tuned a PID loop before']],
+  team:{arjun:['Lead, chassis','',0], ishaan:['Motor driver','',0], omkar:['Sensor array','',0]}},
+ {id:'noteswap', n:'NoteSwap', d:'Notes and previous-year papers in one searchable place, by subject code.', st:'recruiting', date:'Posted 4 days ago', pot:100,
+  proof:[], ms:[0,0,0],
+  open:[['React frontend','Has a Figma file ready'],['Search / ML','Search across scanned PDFs']],
+  team:{sneha:['Lead','',0]}},
+ {id:'canteenq', n:'CanteenQ', d:'Pre-order from the canteen and skip the queue.', st:'abandoned', date:'Dropped May 2026', pot:0,
+  proof:[], ms:[0,0,0], ghost:['dev'],
+  team:{dev:['Lead','',0]}},
+];
+const CL = [
+ {id:'robotics', n:'Robotics Club', d:'Robocon team, weekly build nights in the workshop.', m:[['arjun','Lead'],['ishaan','Electronics head'],['omkar','Member']]},
+ {id:'codecell', n:'CodeCell', d:'The coding club. Runs the fresher bootcamp and the internal hackathon.', m:[['kabir','Lead'],['riya','Web lead'],['sneha','Member'],['dev','Member']]},
+ {id:'design', n:'Design Circle', d:'Posters, fest branding and product design reviews.', m:[['tanvi','Lead'],['riya','Member']]},
+];
+const GR = [
+ {pid:'busping', by:'meera', amt:18000, parts:[[6000,'GPS units for 3 buses',1],[6000,'Running on all routes for 30 days',1],[6000,'Handover to transport office',0]]},
+ {pid:'labslot', by:'rohan', amt:25000, parts:[[8000,'Working booking flow',1],[9000,'RFID readers on 5 benches',0],[8000,'One full semester of use',0]]},
+];
+const CALLS = [
+ {id:'utility', by:'meera', n:'Campus utility grant', amt:30000, d:'For anything students on campus would use every week.', need:300},
+ {id:'hardware', by:'rohan', n:'Hardware build grant', amt:50000, d:'Parts and fabrication for a physical build. Paid per milestone.', need:400},
+];
+
+/* ---------- state ---------- */
+const S = {in:true, q:'', f:'all', tab:'work', req:{}, vouched:{}, applied:{}, resume:'short'};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr = n => '₹' + n.toLocaleString('en-IN');
+const first = id => P[id].n.split(' ')[0];
+
+/* ---------- credit maths ---------- */
+const share = (p, id) => Math.round(p.pot * p.team[id][2] / 100);
+function ledger(id){
+  const rows = [['Starter credit', 'On joining with LinkedIn and college email', 20]];
+  PR.forEach(p => {
+    if (p.team[id] && p.st === 'shipped') rows.push([p.n + ' shipped', p.team[id][2] + '% of a ' + p.pot + ' pot, set by teammates', share(p, id)]);
+    if ((p.ghost||[]).includes(id)) rows.push([p.n + ': stake lost', p.team[id] ? 'Project dropped by its lead' : 'Team marked you as gone', -10]);
+  });
+  if (P[id].vouch) rows.push(['Vouches from teammates', 'Weighted by their own credit', P[id].vouch]);
+  if (id === ME) Object.keys(S.req).forEach(pid => rows.push([PR.find(p=>p.id===pid).n + ': stake held', 'Returned when it ships', -10]));
+  return rows;
+}
+const credit = id => Math.max(0, ledger(id).reduce((a, r) => a + r[2], 0)) + (S.vouched[id] || 0);
+function stats(id){
+  const s = {shipped:0, building:0, ghosted:0, list:[]};
+  PR.forEach(p => {
+    const g = (p.ghost||[]).includes(id);
+    if (g) s.ghosted++;
+    else if (p.team[id]) { if (p.st === 'shipped') s.shipped++; else s.building++; }
+    if (g || p.team[id]) s.list.push(p);
+  });
+  s.joined = s.list.length; return s;
+}
+function together(a, b){ return PR.filter(p => p.team[a] && p.team[b] && a !== b); }
+function pathTo(id){
+  if (id === ME) return '';
+  const t = together(ME, id);
+  if (t.length) return 'You worked together on ' + t.map(p => p.n).join(', ');
+  for (const mid of Object.keys(P)) {
+    const a = together(ME, mid).filter(p => p.st === 'shipped'), b = together(mid, id).filter(p => p.st === 'shipped');
+    if (a.length && b.length) return first(mid) + ' shipped ' + b[0].n + ' with them, and ' + a[0].n + ' with you';
+  }
+  return 'No one you have worked with has worked with them yet';
+}
+
+/* ---------- small pieces ---------- */
+const av = (id, lg) => `<span class="av${lg?' lg':''}" style="background:hsl(${P[id].hue} 55% 42%)" title="${esc(P[id].n)}">${P[id].n.split(' ').map(w=>w[0]).join('')}</span>`;
+const who = id => `<button class="link" data-go="u-${id}">${esc(P[id].n)}</button>`;
+const ST = {shipped:['ok','Shipped'], building:['info','Building'], recruiting:['warn','Needs people'], abandoned:['bad','Dropped']};
+const pill = st => `<span class="pill ${ST[st][0]}">${ST[st][1]}</span>`;
+const meter = ms => `<span class="meter" title="${ms.filter(Boolean).length} of ${ms.length} milestones"><b style="width:${100*ms.filter(Boolean).length/ms.length}%"></b></span>`;
+
+/* ---------- views ---------- */
+function vProjects(){
+  const fs = [['all','All'],['open','Needs people'],['building','Building'],['shipped','Shipped'],['mine','Mine']];
+  const list = PR.filter(p => S.f==='all' || (S.f==='open' && p.open) || (S.f==='mine' && p.team[ME]) || p.st===S.f);
+  return `<div class="head"><div class="stack" style="gap:6px"><h1>Projects on campus</h1>
+    <p>One board for the whole college. Every project shows who is on it, what is built so far and what it still needs.</p></div></div>
+  <div class="filters">${fs.map(f=>`<button data-f="${f[0]}" aria-pressed="${S.f===f[0]}">${f[1]}</button>`).join('')}</div>
+  <div class="cols"><div class="stack">${list.map(p => `<button class="card" data-go="proj-${p.id}">
+      <span class="row between"><h2>${esc(p.n)}</h2>${pill(p.st)}</span>
+      <span class="muted">${esc(p.d)}</span>
+      <span class="row"><span class="avs">${Object.keys(p.team).map(i=>av(i)).join('')}</span>${meter(p.ms)}<span class="small muted mono">${p.ms.filter(Boolean).length}/${p.ms.length} milestones</span></span>
+      ${p.open ? `<span class="row">${p.open.map(o=>`<span class="chip">Needs: ${esc(o[0])}</span>`).join('')}</span>`:''}
+      ${GR.find(g=>g.pid===p.id) ? `<span class="small"><span class="pill ok">Alumni funded</span></span>`:''}
+    </button>`).join('') || '<div class="note">Nothing matches this filter.</div>'}</div>
+  <aside class="stack">
+    <div class="card"><span class="label">Your standing</span>
+      <div class="stat"><b>${credit(ME)}</b><span class="muted small">credit, all from shipped work</span></div>
+      <span class="small muted">${stats(ME).shipped} shipped of ${stats(ME).joined} joined</span>
+      <button class="link" data-go="credit">How credit works</button></div>
+    <div class="card"><span class="label">People you could build with</span>
+      ${['kabir','sneha'].map(i=>`<div class="row" style="flex-wrap:nowrap;align-items:start">${av(i)}<div class="stack" style="gap:2px">${who(i)}<span class="small muted">${pathTo(i)}</span></div></div>`).join('')}</div>
+  </aside></div>`;
+}
+
+function vProject(id){
+  const p = PR.find(x => x.id === id); if (!p) return vProjects();
+  const g = GR.find(x => x.pid === id), mine = !!p.team[ME], shipped = p.st === 'shipped';
+  return `<button class="link" data-go="projects">← All projects</button>
+  <div class="head"><div class="stack" style="gap:6px"><div class="row"><h1>${esc(p.n)}</h1>${pill(p.st)}</div><p>${esc(p.d)}</p><span class="small muted mono">${p.date}</span></div></div>
+  <div class="cols"><div class="stack">
+    <div class="card"><h2>Team</h2><div class="tw"><table><tr><th>Who</th><th>Role</th>${shipped?'<th>What they did</th><th class="n">Share</th><th class="n">Credit</th>':''}</tr>
+      ${Object.entries(p.team).map(([i,t])=>`<tr><td><span class="row" style="flex-wrap:nowrap">${av(i)}${who(i)}</span></td><td>${esc(t[0])}</td>
+        ${shipped?`<td>${esc(t[1])}</td><td class="n">${t[2]}%</td><td class="n">+${share(p,i)}</td>`:''}</tr>`).join('')}
+      ${(p.ghost||[]).filter(i=>!p.team[i]).map(i=>`<tr><td><span class="row" style="flex-wrap:nowrap">${av(i)}${who(i)}</span></td><td><span class="stamp bad">Left mid-project</span></td>${shipped?'<td class="muted">Stake of 10 credit lost</td><td class="n">0%</td><td class="n">−10</td>':''}</tr>`).join('')}
+    </table></div>
+    ${shipped?`<p class="small muted">Shares are the middle value of what each teammate gave the others. Nobody sets their own share.</p>`:''}</div>
+    ${p.open ? `<div class="card"><h2>Open roles</h2>${p.open.map((o,k)=>`<div class="row between"><div class="stack" style="gap:2px"><b>${esc(o[0])}</b><span class="small muted">${esc(o[1])}</span></div>
+      ${mine?'<span class="small muted">You are on this team</span>': S.req[p.id]===k ? `<button class="btn ghost" data-unreq="${p.id}">Withdraw request</button>` : `<button class="btn" data-req="${p.id}" data-k="${k}" ${p.id in S.req?'disabled':''}>Ask to join · stake 10</button>`}</div>`).join('')}
+      <p class="small muted">Joining holds 10 of your credit. You get it back when the project ships. If the team marks you as gone, you lose it.</p></div>`:''}
+    ${p.st==='abandoned'?`<div class="alert">Dropped by its lead before the first milestone. This stays on the lead's profile.</div>`:''}
+  </div>
+  <aside class="stack">
+    <div class="card"><span class="label">Proof</span>${p.proof.length ? p.proof.map(x=>`<div class="row"><span class="stamp">Checked</span><span class="small">${esc(x)}</span></div>`).join('') : '<span class="small muted">Nothing built yet.</span>'}
+      <div class="row">${meter(p.ms)}<span class="small muted mono">${p.ms.filter(Boolean).length}/${p.ms.length}</span></div></div>
+    ${g?`<div class="card"><span class="label">Alumni funding</span><div class="stat"><b>${inr(g.amt)}</b><span class="small muted">from ${who(g.by)}, class of ${P[g.by].y}</span></div>
+      ${g.parts.map(m=>`<div class="row between small"><span>${esc(m[1])}</span><span class="mono">${inr(m[0])} ${m[2]?'<span class="pill ok">Paid</span>':'<span class="pill warn">Held</span>'}</span></div>`).join('')}</div>`:''}
+  </aside></div>`;
+}
+
+function vPeople(){
+  const q = S.q.toLowerCase();
+  const list = Object.keys(P).filter(i => !P[i].alum && i !== ME && (!q || (P[i].n + P[i].b + P[i].skills.join(' ')).toLowerCase().includes(q))).sort((a,b)=>credit(b)-credit(a));
+  return `<div class="head"><div class="stack" style="gap:6px"><h1>People</h1><p>Sorted by credit. Each person shows how you are connected through projects that shipped.</p></div></div>
+  <div class="row"><input type="search" id="q" placeholder="Search a name, branch or skill (try “React” or “ECE”)" value="${esc(S.q)}" aria-label="Search people"></div>
+  <div class="stack" id="plist">${list.map(i => { const s = stats(i); return `<button class="card" data-go="u-${i}">
+    <span class="row between"><span class="row">${av(i)}<span><b>${esc(P[i].n)}</b> <span class="muted small">${P[i].b} · ${P[i].y}</span></span></span><span class="bal">${credit(i)} credit</span></span>
+    <span class="row">${P[i].skills.map(k=>`<span class="chip">${esc(k)}</span>`).join('')}</span>
+    <span class="row between small"><span class="muted">${pathTo(i)}</span><span class="mono ${s.ghosted?'':'muted'}">${s.shipped} shipped / ${s.joined} joined${s.ghosted?` · <span style="color:var(--bad)">${s.ghosted} left</span>`:''}</span></span>
+  </button>`; }).join('') || '<div class="note">No one matches that search.</div>'}</div>`;
+}
+
+function resumeHtml(id){
+  const s = stats(id), done = s.list.filter(p => p.st==='shipped' && p.team[id]), cl = CLAIMS[id] || [];
+  const clubs = CL.filter(c => c.m.some(m => m[0]===id));
+  return `<div class="card resume"><div class="row between"><div><h2>${esc(P[id].n)}</h2><span class="muted">${P[id].b}, class of ${P[id].y}</span></div>
+      ${id===ME?`<button class="btn ghost" data-resume>Rewrite with AI: ${S.resume==='short'?'more detail':'shorter'}</button>`:''}</div>
+    <span class="label">Projects</span>
+    ${done.length ? done.map(p=>`<div><div class="row between"><b>${esc(p.n)} · ${esc(p.team[id][0])}</b><span class="stamp">Signed by ${Object.keys(p.team).length-1} teammate${Object.keys(p.team).length>2?'s':''}</span></div>
+      <ul><li>${esc(p.team[id][1])}.</li>${S.resume==='long'||id!==ME?`<li>${esc(p.d)}</li><li>Proof: ${esc(p.proof.join('; '))}.</li>`:''}</ul></div>`).join('') : '<span class="muted">No shipped projects yet.</span>'}
+    ${clubs.length?`<span class="label">Clubs</span><div>${clubs.map(c=>`${esc(c.n)}, ${esc(c.m.find(m=>m[0]===id)[1])}`).join(' · ')} <span class="muted small">(confirmed by club leads)</span></div>`:''}
+    <span class="label">Skills, as used in the projects above</span><div class="row">${done.length?P[id].skills.map(k=>`<span class="chip">${esc(k)}</span>`).join(''):'<span class="muted">None backed by a project yet.</span>'}</div>
+    ${cl.length?`<span class="label">Not backed by anything</span>${cl.map(c=>`<div class="row between"><span class="muted">${esc(c)}</span><span class="stamp no">No proof</span></div>`).join('')}`:''}
+    ${id===ME?`<form class="row" id="claimf"><input type="text" id="claim" placeholder="Add a line yourself, e.g. “Won the state hackathon”" aria-label="Add a resume line"><button class="btn ghost">Add</button></form>
+    <p class="small muted">The AI writes only from projects your teammates signed. Lines you add yourself show as “No proof” until you attach a link and a teammate signs.</p>`:''}
+  </div>`;
+}
+
+function vProfile(id){
+  const u = P[id]; if (!u) return vPeople();
+  const s = stats(id), me = id === ME, cl = CLAIMS[id] || [];
+  const co = Object.keys(P).filter(o => together(id, o).length);
+  const canVouch = !me && together(ME, id).some(p => p.st === 'shipped');
+  const clubs = CL.filter(c => c.m.some(m => m[0]===id));
+  const tabs = u.alum ? [] : [['work','Work'],['people','Worked with'],['resume','Resume']];
+  let body = '';
+  if (u.alum) {
+    const gs = GR.filter(g => g.by === id);
+    body = `<div class="card"><h2>Funding</h2>${gs.map(g=>`<div class="row between"><button class="link" data-go="proj-${g.pid}">${esc(PR.find(p=>p.id===g.pid).n)}</button><span class="mono">${inr(g.parts.filter(m=>m[2]).reduce((a,m)=>a+m[0],0))} paid of ${inr(g.amt)}</span></div>`).join('')}
+      ${CALLS.filter(c=>c.by===id).map(c=>`<div class="row between"><span>${esc(c.n)} <span class="pill info">Open call</span></span><span class="mono">up to ${inr(c.amt)}</span></div>`).join('')}</div>`;
+  } else if (S.tab === 'work') {
+    body = `<div class="card"><h2>Credit ledger</h2><div class="tw"><table>${ledger(id).map(r=>`<tr><td><b>${esc(r[0])}</b><br><span class="small muted">${esc(r[1])}</span></td><td class="n" style="${r[2]<0?'color:var(--bad)':''}">${r[2]>0?'+':'−'}${Math.abs(r[2])}</td></tr>`).join('')}
+      ${S.vouched[id]?`<tr><td><b>Your vouch</b></td><td class="n">+${S.vouched[id]}</td></tr>`:''}</table></div></div>
+    <div class="stack">${s.list.map(p=>`<button class="card" data-go="proj-${p.id}"><span class="row between"><b>${esc(p.n)}</b>${(p.ghost||[]).includes(id)?'<span class="stamp bad">'+(p.team[id]?'Dropped it':'Left mid-project')+'</span>':pill(p.st)}</span>
+      <span class="small muted">${p.team[id]&&!(p.ghost||[]).includes(id)?esc(p.team[id][0])+(p.team[id][1]?' — '+esc(p.team[id][1]):''):'No contribution recorded'}</span></button>`).join('')}</div>`;
+  } else if (S.tab === 'people') {
+    body = co.length ? `<div class="card"><h2>Everyone ${me?'you have':first(id)+' has'} worked with</h2>${co.map(o=>`<div class="row between"><span class="row" style="flex-wrap:nowrap">${av(o)}${who(o)}</span><span class="small muted">${together(id,o).map(p=>esc(p.n)+' ('+ST[p.st][1].toLowerCase()+')').join(', ')}</span></div>`).join('')}</div>`
+      : `<div class="note">No one has finished a project with ${first(id)} yet.</div>`;
+  } else body = resumeHtml(id);
+
+  return `<div class="card"><div class="row" style="align-items:start">${av(id,1)}
+      <div class="stack" style="gap:6px;flex:1 1 240px"><h1>${esc(u.n)}</h1>
+        <span class="muted">${u.alum ? esc(u.alum)+' · '+u.b+', class of '+u.y : u.b+', class of '+u.y}</span>
+        <div class="row"><span class="stamp">LinkedIn verified</span><span class="stamp">${u.alum?'Degree confirmed':'College email'}</span></div>
+        ${!me&&!u.alum?`<span class="small muted">${pathTo(id)}</span>`:''}</div>
+      ${!me&&!u.alum?`<div class="stack" style="gap:4px"><button class="btn" data-vouch="${id}" ${canVouch&&!S.vouched[id]?'':'disabled'}>${S.vouched[id]?'Vouched':'Vouch'}</button>
+        <span class="small muted" style="max-width:22ch">${canVouch?'Worth more because you shipped together.':'Only people who shipped with them can vouch.'}</span></div>`:''}</div>
+    ${u.alum?'':`<div class="stats"><div class="stat"><b>${credit(id)}</b><span class="small muted">credit</span></div>
+      <div class="stat"><b>${s.shipped}<span class="muted" style="font-size:1rem"> / ${s.joined}</span></b><span class="small muted">shipped of joined</span></div>
+      <div class="stat"><b>${co.length}</b><span class="small muted">people worked with</span></div>
+      <div class="stat"><b>${cl.length}</b><span class="small muted">claims with no proof</span></div></div>
+    ${s.ghosted?`<div class="alert">Left or dropped ${s.ghosted} of ${s.joined} projects. Teams see this before accepting a join request.</div>`:''}`}</div>
+  ${tabs.length?`<div class="filters">${tabs.map(t=>`<button data-tab="${t[0]}" aria-pressed="${S.tab===t[0]}">${t[1]}</button>`).join('')}</div>`:''}
+  <div class="cols"><div class="stack">${body}</div><aside class="stack">
+    ${clubs.length?`<div class="card"><span class="label">Clubs</span>${clubs.map(c=>`<div class="row between"><button class="link" data-go="club-${c.id}">${esc(c.n)}</button><span class="small muted">${esc(c.m.find(m=>m[0]===id)[1])}</span></div>`).join('')}</div>`:''}
+    ${u.alum?'':`<div class="card"><span class="label">Skills</span><div class="row">${u.skills.map(k=>`<span class="chip">${esc(k)}</span>`).join('')}</div>
+      <span class="small muted">${s.shipped?'Used in shipped projects.':'Self-listed. No shipped project uses them yet.'}</span></div>`}
+  </aside></div>`;
+}
+
+function vClubs(id){
+  const c = CL.find(x => x.id === id);
+  if (c) return `<button class="link" data-go="clubs">← All clubs</button><div class="head"><div class="stack" style="gap:6px"><h1>${esc(c.n)}</h1><p>${esc(c.d)}</p></div></div>
+    <div class="card"><h2>Members</h2><div class="tw"><table><tr><th>Member</th><th>Role</th><th class="n">Shipped</th><th class="n">Credit</th></tr>
+    ${c.m.map(m=>`<tr><td><span class="row" style="flex-wrap:nowrap">${av(m[0])}${who(m[0])}</span></td><td>${esc(m[1])}</td><td class="n">${stats(m[0]).shipped}/${stats(m[0]).joined}</td><td class="n">${credit(m[0])}</td></tr>`).join('')}</table></div>
+    <p class="small muted">The club lead confirms the roster each semester. Being a member gives no credit. Club projects earn it the same way as any other.</p></div>
+    <div class="card"><h2>Projects by members</h2>${PR.filter(p=>c.m.filter(m=>p.team[m[0]]).length>=2).map(p=>`<div class="row between"><button class="link" data-go="proj-${p.id}">${esc(p.n)}</button>${pill(p.st)}</div>`).join('')}</div>`;
+  return `<div class="head"><div class="stack" style="gap:6px"><h1>Clubs</h1><p>Each club keeps its roster here. Open a member to see what they have built.</p></div></div>
+    <div class="rules">${CL.map(c=>`<button class="card" data-go="club-${c.id}"><h2>${esc(c.n)}</h2><span class="muted">${esc(c.d)}</span>
+      <span class="row between"><span class="avs">${c.m.map(m=>av(m[0])).join('')}</span><span class="small muted">${c.m.length} members</span></span></button>`).join('')}</div>`;
+}
+
+function vFunding(){
+  const paid = GR.reduce((a,g)=>a+g.parts.filter(m=>m[2]).reduce((x,m)=>x+m[0],0),0), tot = GR.reduce((a,g)=>a+g.amt,0);
+  const mine = PR.filter(p => p.team[ME] && p.st !== 'abandoned' && !GR.find(g=>g.pid===p.id));
+  const teamCredit = p => Object.keys(p.team).reduce((a,i)=>a+credit(i),0);
+  return `<div class="head"><div class="stack" style="gap:6px"><h1>Alumni funding</h1><p>Alumni put money behind student projects. It is paid one milestone at a time, after the team shows the milestone is done.</p></div></div>
+  <div class="card"><div class="stats"><div class="stat"><b>${inr(tot)}</b><span class="small muted">committed to projects</span></div><div class="stat"><b>${inr(paid)}</b><span class="small muted">paid out so far</span></div><div class="stat"><b>${inr(tot-paid)}</b><span class="small muted">held until milestones are met</span></div></div></div>
+  <div class="cols"><div class="stack"><h2>Open calls</h2>${CALLS.map(c=>`<div class="card"><div class="row between"><h3>${esc(c.n)}</h3><span class="mono">up to ${inr(c.amt)}</span></div>
+      <span class="muted">${esc(c.d)}</span><span class="small">From ${who(c.by)}, class of ${P[c.by].y}. Team needs ${c.need} combined credit and at least one shipped project.</span>
+      ${mine.map(p=>{const ok=teamCredit(p)>=c.need, k=c.id+p.id; return `<div class="row between small"><span>${esc(p.n)} <span class="mono muted">team credit ${teamCredit(p)}</span></span>
+        ${S.applied[k]?'<span class="pill ok">Applied</span>':ok?`<button class="btn ghost" data-apply="${k}">Apply with this team</button>`:`<span class="pill warn">${c.need-teamCredit(p)} short</span>`}</div>`}).join('')}</div>`).join('')}</div>
+  <aside class="stack"><h2>Funded now</h2>${GR.map(g=>`<button class="card" data-go="proj-${g.pid}"><span class="row between"><b>${esc(PR.find(p=>p.id===g.pid).n)}</b><span class="mono">${inr(g.amt)}</span></span>
+    <span class="row">${meter(g.parts.map(m=>m[2]))}<span class="small muted">${g.parts.filter(m=>m[2]).length} of ${g.parts.length} paid</span></span><span class="small muted">Backed by ${esc(P[g.by].n)}</span></button>`).join('')}</aside></div>`;
+}
+
+function vCredit(){
+  const R = [
+   ['Only shipped work earns credit','A project that is live and used is worth 100. A working build with only a repo or demo is worth 60. Ideas, posts and certificates are worth 0.'],
+   ['Teammates set your share','Each teammate splits the project between the others. Your share is the middle value. You never rate yourself.'],
+   ['Joining costs a stake','You put 10 credit on the line to join. It comes back when the project ships. If two thirds of the team mark you as gone, it is lost.'],
+   ['Vouches are limited','Only people who shipped with you can vouch. A vouch is worth more from someone with high credit, and each repeat between the same two people is worth half the last.'],
+   ['Closed circles are flagged','If most of your credit comes from the same two people, your profile says so. Trading credit inside a friend group stops working.'],
+   ['Old credit fades','Credit older than 18 months counts half. You stay high by continuing to build.'],
+  ];
+  return `<div class="head"><div class="stack" style="gap:6px"><h1>How credit works</h1><p>Credit answers one question: did this person finish real things with other people? Nothing you type about yourself can raise it.</p></div></div>
+  <div class="rules">${R.map(r=>`<div class="card"><h3>${r[0]}</h3><p>${r[1]}</p></div>`).join('')}</div>
+  <div class="cols"><div class="card"><h2>Your ledger</h2><div class="tw"><table>${ledger(ME).map(r=>`<tr><td><b>${esc(r[0])}</b><br><span class="small muted">${esc(r[1])}</span></td><td class="n" style="${r[2]<0?'color:var(--bad)':''}">${r[2]>0?'+':'−'}${Math.abs(r[2])}</td></tr>`).join('')}
+    <tr><td><b>Total</b></td><td class="n"><b>${credit(ME)}</b></td></tr></table></div></div>
+  <aside class="stack"><div class="card"><span class="label">What faking it looks like</span>
+    <div class="row" style="flex-wrap:nowrap">${av('dev')}<div>${who('dev')}<br><span class="small muted">${stats('dev').shipped} shipped of ${stats('dev').joined} joined · ${credit('dev')} credit · ${CLAIMS.dev.length} claims with no proof</span></div></div>
+    <span class="small muted">A big bio does nothing here. The profile shows the record.</span></div></aside></div>`;
+}
+
+function vSignin(){
+  return `<div class="card signin"><h1>Sign in to Connect</h1><p class="muted">For students and alumni of one college. Build things with each other, and let the record speak.</p>
+    <button class="btn" data-signin>Continue with LinkedIn</button>
+    <div class="stack small muted" style="gap:4px"><span>From LinkedIn: your name, photo and education, to confirm the college and graduation year.</span>
+    <span>Then a one-time code to your college email. Alumni are confirmed by degree year.</span></div>
+    <div class="note">This is a prototype. The button signs you in as a sample student. Nothing is sent to LinkedIn.</div></div>`;
+}
+
+/* ---------- shell + routing ---------- */
+function route(){ return (location.hash || '#projects').slice(1); }
+function render(){
+  const r = S.in ? route() : 'signin';
+  const top = r.startsWith('proj-') ? 'projects' : r.startsWith('club-') ? 'clubs' : r.startsWith('u-') ? (r==='u-'+ME?'me':'people') : r;
+  const nav = [['projects','Projects'],['people','People'],['clubs','Clubs'],['funding','Funding'],['credit','Credit']];
+  let v;
+  if (r === 'signin') v = vSignin();
+  else if (r.startsWith('proj-')) v = vProject(r.slice(5));
+  else if (r.startsWith('u-')) v = vProfile(r.slice(2));
+  else if (r === 'clubs' || r.startsWith('club-')) v = vClubs(r.slice(5));
+  else v = ({people:vPeople, funding:vFunding, credit:vCredit}[r] || vProjects)();
+  $('#app').innerHTML = `<header class="bar"><div class="wrap">
+      <button class="logo" data-go="projects"><i></i>Connect</button>
+      ${S.in?`<button class="who" data-go="u-${ME}" aria-label="Your profile"><span class="bal">${credit(ME)} credit</span>${av(ME)}</button>
+      <nav class="tabs" aria-label="Sections">${nav.map(n=>`<button data-go="${n[0]}" ${top===n[0]?'aria-current="page"':''}>${n[1]}</button>`).join('')}<button data-signout style="margin-left:auto">Sign out</button></nav>`:'<span style="padding-bottom:10px"></span>'}
+    </div></header>
+    <div class="sample"><div class="wrap">Prototype with sample data. You are viewing as ${esc(P[ME].n)}, a made-up student. Every person, project and amount is invented.</div></div>
+    <main class="wrap">${v}</main>`;
+}
+let tt; function toast(m){ const t=$('#toast'); t.textContent=m; t.hidden=false; clearTimeout(tt); tt=setTimeout(()=>t.hidden=true,3200); }
+function go(h){ if (route()===h) render(); else location.hash = h; window.scrollTo(0,0); }
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; const d = b.dataset;
+  if (d.go) { if (d.go.startsWith('u-')) S.tab='work'; e.stopPropagation(); go(d.go); }
+  else if (d.f) { S.f = d.f; render(); }
+  else if (d.tab) { S.tab = d.tab; render(); }
+  else if (d.req) { S.req[d.req] = +d.k; render(); toast('Request sent. 10 credit is held until the team answers.'); }
+  else if (d.unreq) { delete S.req[d.unreq]; render(); toast('Request withdrawn. Your 10 credit is back.'); }
+  else if (d.vouch) { const n = together(ME,d.vouch).filter(p=>p.st==='shipped').length; const w = Math.max(1, Math.round(5*Math.min(1,credit(ME)/200)/n));
+    S.vouched[d.vouch] = w; render(); toast(`Vouched for ${first(d.vouch)}: +${w} credit. Smaller because you already share ${n} project${n>1?'s':''}.`); }
+  else if (d.apply) { S.applied[d.apply] = 1; render(); toast('Application sent to the alum.'); }
+  else if ('resume' in d) { S.resume = S.resume==='short'?'long':'short'; render(); toast('Rewritten from your signed projects.'); }
+  else if ('signin' in d) { S.in = true; go('projects'); }
+  else if ('signout' in d) { S.in = false; render(); }
+});
+document.addEventListener('submit', e => { e.preventDefault(); const i = $('#claim'); if (i && i.value.trim()) { CLAIMS[ME].push(i.value.trim()); render(); toast('Added as “No proof”. It does not change your credit.'); } });
+document.addEventListener('input', e => { if (e.target.id === 'q') { S.q = e.target.value; const tmp = document.createElement('div'); tmp.innerHTML = vPeople(); $('#plist').innerHTML = tmp.querySelector('#plist').innerHTML; } });
+addEventListener('hashchange', render);
+render();
+</script>
