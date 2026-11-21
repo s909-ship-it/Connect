@@ -1,6 +1,6 @@
-# Connect showcase
+# Connect
 
-A public showcase site for [Connect](https://github.com/pt-scheon/connect), designed in the visual style of melon.studio and filled with Connect's live data.
+A public showcase site for [Connect] filled with a data set.
 
 ## What's new in this update
 
